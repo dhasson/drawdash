@@ -8,6 +8,16 @@ import { transcribeAudio } from '@/actions/transcribe';
 import { useProject } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tldraw, createShapeId, getSnapshot, loadSnapshot } from 'tldraw';
+
+import {
+  assertExportablePngBase64,
+  downloadPngFromBase64,
+  openPdfPrintFromBase64,
+} from '@/lib/leavebehind-export';
+import {
+  buildWorkshopTemplateShapes,
+  type WorkshopTemplateId,
+} from '@/lib/workshop-templates';
 import 'tldraw/tldraw.css';
 
 import { BeforeAfterSlider } from '@/components/canvas/before-after-slider';
@@ -676,6 +686,57 @@ export function WhiteboardCanvas({
     }
   }, [mode, agentTranscript, askPrompt, exportCanvasImage, projectId, frameId]);
 
+  const applyWorkshopTemplate = useCallback(
+    (templateId: WorkshopTemplateId) => {
+      const editor = editorRef.current;
+      if (!editor || !frameId) {
+        setError('Canvas not ready');
+        return;
+      }
+      const frame = editor.getShape(frameId);
+      if (!frame || frame.type !== 'frame') {
+        setError('Drawing Area frame missing');
+        return;
+      }
+      const childIds = editor.getSortedChildIdsForParent(frameId);
+      if (childIds.length > 0) {
+        editor.deleteShapes(childIds);
+      }
+      const props = frame.props as { w: number; h: number };
+      const shapes = buildWorkshopTemplateShapes(
+        templateId,
+        frameId as Parameters<typeof buildWorkshopTemplateShapes>[1],
+        props.w,
+        props.h,
+      );
+      editor.createShapes(shapes);
+      setError(null);
+    },
+    [frameId],
+  );
+
+  const handleExportPng = useCallback(async () => {
+    try {
+      const raw = await exportCanvasImage();
+      const b64 = assertExportablePngBase64(raw);
+      downloadPngFromBase64(b64, 'workshop-board.png');
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PNG export failed');
+    }
+  }, [exportCanvasImage]);
+
+  const handleExportPdf = useCallback(async () => {
+    try {
+      const raw = await exportCanvasImage();
+      const b64 = assertExportablePngBase64(raw);
+      openPdfPrintFromBase64(b64, 'Workshop leave-behind');
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PDF export failed');
+    }
+  }, [exportCanvasImage]);
+
   // Keep handleGenerate ref in sync
   useEffect(() => {
     handleGenerateRef.current = handleGenerate;
@@ -984,6 +1045,9 @@ export function WhiteboardCanvas({
         onGenerate={handleGenerate}
         onAcceptImage={handleAcceptImage}
         onRejectImage={handleRejectImage}
+        onApplyTemplate={localMode ? applyWorkshopTemplate : undefined}
+        onExportPng={localMode ? handleExportPng : undefined}
+        onExportPdf={localMode ? handleExportPdf : undefined}
         canvasReady={!!(frameId && editorRef.current)}
       />
 

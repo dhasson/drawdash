@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:workshop": "node src/lib/check-workshop-templates.mjs"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.2",

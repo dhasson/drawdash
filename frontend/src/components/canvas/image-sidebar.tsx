@@ -10,6 +10,10 @@ import { Binoculars, Brain, Mic, Paintbrush } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  WORKSHOP_TEMPLATES,
+  type WorkshopTemplateId,
+} from '@/lib/workshop-templates';
 
 interface ImageSidebarProps {
   projectId: string;
@@ -27,6 +31,9 @@ interface ImageSidebarProps {
   onGenerate: () => void;
   onAcceptImage: () => void;
   onRejectImage: () => void;
+  onApplyTemplate?: (templateId: WorkshopTemplateId) => void;
+  onExportPng?: () => void;
+  onExportPdf?: () => void;
   canvasReady: boolean;
 }
 
@@ -46,6 +53,9 @@ export function ImageSidebar({
   onGenerate,
   onAcceptImage,
   onRejectImage,
+  onApplyTemplate,
+  onExportPng,
+  onExportPdf,
   canvasReady,
 }: ImageSidebarProps) {
   const [isThinking, setIsThinking] = useState(false);
@@ -172,6 +182,50 @@ export function ImageSidebar({
 
           {/* Divider */}
           <div className="border-t border-gray-200" />
+
+          {localMode && onApplyTemplate && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium text-gray-900">Workshop templates</p>
+              <div className="grid grid-cols-2 gap-2">
+                {WORKSHOP_TEMPLATES.map((t) => (
+                  <Button
+                    key={t.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-auto whitespace-normal px-2 py-2 text-left text-xs"
+                    disabled={!canvasReady}
+                    onClick={() => onApplyTemplate(t.id)}
+                    title={t.description}
+                  >
+                    {t.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={!canvasReady || !onExportPng}
+                  onClick={() => onExportPng?.()}
+                >
+                  Export PNG
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={!canvasReady || !onExportPdf}
+                  onClick={() => onExportPdf?.()}
+                >
+                  Export PDF
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {localMode && onApplyTemplate && <div className="border-t border-gray-200" />}
 
           {/* Tabs for Agent Mode and Ask Mode */}
           <Tabs
