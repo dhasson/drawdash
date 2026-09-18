@@ -1,0 +1,14 @@
+---
+description: Image providers must honor canvas edit or refuse
+globs: backend/app/services/providers/**
+alwaysApply: false
+---
+
+# Canvas-aware image providers
+
+When adding or changing an `IMAGE_PROVIDER` under `backend/app/services/providers/`:
+
+1. If the provider cannot use `image_data` for `type=edit`, refuse with a clear error. Do not return text-to-image as if it edited the canvas.
+2. Register the provider in `providers/__init__.py` and document it in `.env.example`.
+3. Keep secrets in `.env` only. Never commit API keys.
+4. Prefer the existing helper pair `decode_optional_image` / `image_to_base64_png` from `base.py`.

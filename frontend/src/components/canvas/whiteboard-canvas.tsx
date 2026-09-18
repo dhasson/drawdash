@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { generateImage } from '@/actions/image';
+import { fetchCredits, generateImage } from '@/actions/image';
 import { DEFAULT_USER_ID, updateProject } from '@/actions/projects';
 import { transcribeAudio } from '@/actions/transcribe';
 import { useProject } from '@/hooks/useProject';
@@ -50,6 +50,8 @@ export function WhiteboardCanvas({
   const [agentTranscript, setAgentTranscript] = useState(''); // Voice transcript for Agent Mode
   const [askPrompt, setAskPrompt] = useState(''); // Text input for Ask Mode
   const [error, setError] = useState<string | null>(null);
+  const [creditsEnabled, setCreditsEnabled] = useState(false);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const [frameId, setFrameId] = useState<string | null>(null);
   const [imageUsed, setImageUsed] = useState(false);
   const [showSlider, setShowSlider] = useState(false);
@@ -101,6 +103,23 @@ export function WhiteboardCanvas({
     mediaRecorderRef.current = null;
     audioChunksRef.current = [];
   };
+
+  useEffect(() => {
+    if (!localMode) return;
+    let cancelled = false;
+    fetchCredits(projectId)
+      .then((bal) => {
+        if (cancelled) return;
+        setCreditsEnabled(bal.enabled);
+        setCreditsRemaining(bal.enabled ? bal.credits_remaining : null);
+      })
+      .catch(() => {
+        /* metering endpoint optional while backend restarts */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [localMode, projectId]);
 
   const blobToBase64 = (blob: Blob): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -674,6 +693,10 @@ export function WhiteboardCanvas({
 
       setGeneratedImage(data.image_data);
       setImageUsed(false); // Reset when new image is generated
+      if (typeof data.credits_remaining === 'number') {
+        setCreditsEnabled(true);
+        setCreditsRemaining(data.credits_remaining);
+      }
 
       if (data.text_response) {
         console.log('Model response:', data.text_response);
@@ -1048,6 +1071,8 @@ export function WhiteboardCanvas({
         onApplyTemplate={localMode ? applyWorkshopTemplate : undefined}
         onExportPng={localMode ? handleExportPng : undefined}
         onExportPdf={localMode ? handleExportPdf : undefined}
+        creditsEnabled={creditsEnabled}
+        creditsRemaining={creditsRemaining}
         canvasReady={!!(frameId && editorRef.current)}
       />
 
