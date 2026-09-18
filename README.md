@@ -2,78 +2,92 @@
   <img src="assets/cover.png" width="600" />
 </p>
 
-<h1 align="center">DrawDash</h1>
+<h1 align="center">DrawDash (free-stack fork)</h1>
 
 <p align="center">
-  <b>Proactive Agentic Whiteboards: Enhancing Diagrammatic Learning</b>
+  <b>Proactive Agentic Whiteboards — local free demo</b>
 </p>
 
 <p align="center">
-  An AI-powered whiteboard assistant that proactively completes and refines educational diagrams through multimodal understanding. DrawDash listens to spoken explanations, detects intent, and dynamically suggests diagram refinements that can be accepted with a single keystroke.
+  Fork of <a href="https://github.com/SuveenE/drawdash">SuveenE/drawdash</a> (MIT).
+  Listens while you explain, suggests a diagram, accept with <b>Tab</b>.
 </p>
 
 <p align="center">
-  <a href="https://arxiv.org/abs/2512.01234v2">Paper</a> · <a href="#overview">Overview</a> · <a href="#setup">Setup</a> · <a href="https://x.com/SuveenE/status/1979942916572561527?s=20">Demo</a>
-</p>
-
-<p align="center">
-  <a href="https://arxiv.org/abs/2512.01234v2"><img src="https://img.shields.io/badge/arXiv-2512.01234-b31b1b.svg" alt="arXiv" /></a>
-  <img src="https://img.shields.io/github/license/foloup/foloup" alt="License" />
-  <a href="https://x.com/SuveenE/status/1979942916572561527?s=20"><img src="https://img.shields.io/badge/demo-drawdash-blue" alt="Demo" /></a>
+  <a href="https://arxiv.org/abs/2512.01234v2">Paper</a> ·
+  <a href="https://x.com/SuveenE/status/1979942916572561527">Upstream demo</a> ·
+  <a href="NOTICE">NOTICE</a>
 </p>
 
 ---
 
-Educators frequently rely on diagrams to explain complex concepts during lectures, yet creating clear and complete visual representations in real time while simultaneously speaking can be cognitively demanding. DrawDash adopts a TAB-completion interaction model: it listens to spoken explanations, detects intent, and dynamically suggests refinements that can be accepted with a single keystroke.
+## Free local mode vs full upstream mode
 
-## Overview
+| | Free local (default) | Full upstream |
+|---|---|---|
+| Entry | `/demo` | `/projects` + Supabase |
+| STT | Local mic → faster-whisper | Same |
+| Diagrams | `IMAGE_PROVIDER=local-diagram` (Pillow, no key) | `gemini-image` (Nano Banana, paid) |
+| Icons / saves | Off when Supabase unset | fal + Supabase |
 
-| Component | Description |
-|-----------|-------------|
-| **Speech Recognition** | Listens to spoken explanations while you draw |
-| **Visual Understanding** | Interprets incomplete diagrams in real time |
-| **Generative AI** | Suggests improved and completed diagrams |
-| **TAB Completion** | Accept suggestions with a single keystroke |
+Nano Banana (`gemini-2.5-flash-image`) has **no free API tier**. This fork defaults to `local-diagram` so the listen → suggest → Tab loop works with zero keys.
 
-## Why DrawDash?
+### Providers (`IMAGE_PROVIDER`)
 
-| Challenge | How DrawDash Helps |
-|-----------|-------------|
-| Cognitive Load | Reduces the burden of drawing and speaking simultaneously |
-| Incomplete Diagrams | Proactively completes missing visual elements |
-| Real-Time Feedback | Provides instant suggestions based on speech context |
-| Diagram Quality | Refines rough sketches into clear educational visuals |
+- `local-diagram` (default) — Pillow boxes from the prompt, no API key
+- `svg-llm` — free Google AI Studio key + `gemini-2.5-flash` → SVG → PNG
+- `pollinations` — free anonymous/optional key text-to-image
+- `gemini-image` — paid Nano Banana (upstream quality)
 
-## Paper
+## Quick start (Windows)
 
-**Title:** Proactive Agentic Whiteboards: Enhancing Diagrammatic Learning
-
-**Authors:** Suveen Ellawela, Sashenka Gamage, Dinithi Dissanayake
-
-**Link:** [https://arxiv.org/html/2512.01234v2](https://arxiv.org/html/2512.01234v2)
-
-### Abstract
-
-Educators frequently rely on diagrams to explain complex concepts during lectures, yet creating clear and complete visual representations in real time while simultaneously speaking can be cognitively demanding. Incomplete or unclear diagrams may hinder student comprehension, as learners must mentally reconstruct missing information while following the verbal explanation. Inspired by advances in code completion tools, we introduce DrawDash, an AI-powered whiteboard assistant that proactively completes and refines educational diagrams through multimodal understanding. DrawDash adopts a TAB-completion interaction model: it listens to spoken explanations, detects intent, and dynamically suggests refinements that can be accepted with a single keystroke. We demonstrate DrawDash across four diverse teaching scenarios—spanning topics from computer science and web development to biology. This work represents an early exploration into reducing instructors' cognitive load and improving diagram-based pedagogy through real-time, speech-driven visual assistance, and concludes with a discussion of current limitations and directions for formal classroom evaluation.
-
-## Setup
-
-DrawDash consists of two main components: a backend API and a frontend web application.
-
-```bash
-# Clone the repository
-git clone https://github.com/foloup/drawdash.git
+```powershell
+git clone <your-fork-or-this-path>
 cd drawdash
 ```
 
+### Backend
+
+```powershell
+cd backend
+Copy-Item .env.example .env
+# Leave GOOGLE_API_KEY empty for local-diagram (default)
+
+# Poetry:
+# poetry install
+# .venv\Scripts\Activate.ps1
+# poetry run uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8080 --env-file .env
+
+# Or pip:
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8080 --env-file .env
+```
+
+### Frontend
+
+```powershell
+cd frontend
+Copy-Item .env.example .env.local
+npm install
+npm run dev
+```
+
+Open **http://localhost:3000/demo** (Chrome/Edge recommended for mic).
+
+1. Sketch inside the Drawing Area frame  
+2. Agent Mode → start mic → speak → **stop mic** (or wait ~25s) → local Whisper transcribes  
+3. **Tab** accept · **Esc** reject  
+
+## Setup (components)
+
 | Component | Instructions |
 |-----------|-------------|
-| **Backend** | See [backend/README.md](backend/README.md) |
-| **Frontend** | See [frontend/README.md](frontend/README.md) |
+| **Backend** | [backend/README.md](backend/README.md) |
+| **Frontend** | [frontend/README.md](frontend/README.md) |
 
-## Citation
-
-If you use this work in your research, please cite:
+## Citation (upstream)
 
 ```bibtex
 @misc{ellawela2025drawdash,
@@ -87,10 +101,6 @@ If you use this work in your research, please cite:
 }
 ```
 
-## Contact
-
-If you have any questions or feedback, please feel free to reach out at [suveen.te1[at]gmail.com](mailto:suveen.te1@gmail.com).
-
 ## License
 
-The software code is licensed under the MIT License.
+MIT — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Upstream copyright (c) 2025 Suveen Ellawela.

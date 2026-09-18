@@ -1,79 +1,73 @@
 # Backend
 
+## Free local mode (default)
+
+```powershell
+# Option A — Poetry
+poetry install
+
+# Option B — pip (if Poetry is not installed)
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+Copy-Item .env.example .env
+# Leave GOOGLE_API_KEY, SUPABASE_*, and FAL_KEY empty for free local mode
+.\.venv\Scripts\python.exe -m uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8080 --env-file .env
+```
+
+`IMAGE_PROVIDER` options:
+
+| Value | Cost | Notes |
+|-------|------|-------|
+| `local-diagram` | Free | Pillow boxes from the prompt (default, no API key) |
+| `svg-llm` | Free* | Gemini Flash → SVG → PNG (*needs GOOGLE_API_KEY) |
+| `pollinations` | Free | Text-to-image via Pollinations |
+| `gemini-image` | Paid | Upstream Nano Banana |
+
+Speech uses **local faster-whisper** (`WHISPER_MODEL=base` by default).
+
+## Full upstream mode
+
+Also set `SUPABASE_URL`, `SUPABASE_KEY`, and optionally `FAL_KEY` for project icons.
+
 ## Set up Poetry
 
-Please follow the official [installation guide](https://python-poetry.org/docs/#installation) to install Poetry, which will be used to manage dependencies and environments.
+See the official [installation guide](https://python-poetry.org/docs/#installation).
 
 ```bash
-# Install dependencies
 poetry install
 ```
 
 ```bash
-# Activate Python Virtual Environment for Mac/Linux
+# Mac/Linux
 eval "$(poetry env activate)"
 
-# Activate Python Virtual Environment for Windows
+# Windows
 .venv\Scripts\Activate.ps1
 ```
 
-## Set up environment variables
+## API
 
-```bash
-# Create .env file (by copying from .env.example)
-cp .env.example .env
-```
+### Health
 
-Make sure to add your Fal AI API key to the `.env` file:
+`GET /status` → `{ "status": "ok" }`
 
-```bash
-FAL_KEY=your_fal_ai_api_key_here
-```
+### Diagram generation
 
-You can obtain a Fal AI API key from [fal.ai](https://fal.ai/)
+`POST /api/generate-image`
 
-## Quick Start
-
-To spin up the server, run the following command at the `server` directory:
-
-```bash
-# For local development, and if hosting service allows us to manually create the .env file
-poetry run uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8080 --env-file .env
-```
-
-## API Endpoints
-
-### 3D Icon Generation
-
-Generate a 3D icon using Fal AI based on a text prompt:
-
-**POST** `/projects/generate-icon`
-
-**Request Body:**
 ```json
 {
-  "prompt": "A modern cloud computing icon",
-  "style": "3D render, isometric, clean background"
+  "prompt": "binary search tree with root 50",
+  "image_data": null,
+  "project_id": "local-demo",
+  "type": "generate"
 }
 ```
 
-**Response:**
-```json
-{
-  "image_url": "https://...",
-  "image_data": null
-}
-```
-
-This endpoint uses Fal AI's FLUX Pro model to generate high-quality 3D-style icons. The default style is "3D render, isometric, clean background", but you can customize it by providing your own style string.
+Returns `{ "image_data": "<base64 png>", "text_response": "..." }`.
 
 ## Debugging Tips
 
-1. If your VSCode is not able to recognise the libraries which you have installed, do the following
-
-```bash
-poetry env info 
-### Copy the value for Virtualenv Executable ###
-### Open the command palette and click the Python: Select Interpreter command ###
-### Paste the value and press enter. If VSCode prompts you to "Creates a `.venv` virtual environment in the current directory", exit the menu and restart VSCode/your computer. Repeat the steps above until ur library gets recognised. ###
-
+1. If VSCode does not recognise libraries: `poetry env info`, then **Python: Select Interpreter** and paste the Virtualenv Executable path.

@@ -1,19 +1,19 @@
 # Frontend
 
-## Set up environment variables
+## Free local mode
 
-```bash
-# Create .env file (by copying from .env.example)
-cp .env.example .env
-```
-
-## Quick Start
-
-First, run the development server:
-
-```bash
+```powershell
+Copy-Item .env.example .env.local
 npm install
 npm run dev
 ```
 
-## Add [ShadCn](https://ui.shadcn.com/docs/components/accordion) components
+Open http://localhost:3000/demo
+
+Requires the backend on http://localhost:8080 (`NEXT_PUBLIC_API_URL`).
+
+Agent Mode records the mic and posts audio to `/api/transcribe` (faster-whisper on the backend). Ask Mode works without a mic.
+
+## Full project UI
+
+`/projects` needs Supabase configured on the backend. Use `/demo` without it.

@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ImageSidebarProps {
   projectId: string;
+  localMode?: boolean;
   generatedImage: string | null;
   imageUsed: boolean;
   transcript: string;
@@ -31,6 +32,7 @@ interface ImageSidebarProps {
 
 export function ImageSidebar({
   projectId,
+  localMode = false,
   generatedImage,
   imageUsed,
   transcript,
@@ -116,12 +118,18 @@ export function ImageSidebar({
       <div className="flex w-96 flex-col gap-6 border-l border-gray-200 bg-white">
         {/* Header */}
         <div className="flex items-center justify-end border-b border-gray-200 bg-white p-3">
-          <Link
-            href={`/projects/${projectId}/analysis`}
-            className="text-sm text-black hover:text-gray-700 hover:underline"
-          >
-            Go to Analysis →
-          </Link>
+          {localMode ? (
+            <span className="text-sm text-gray-500">
+              Free demo · Tab accept · mic → local Whisper
+            </span>
+          ) : (
+            <Link
+              href={`/projects/${projectId}/analysis`}
+              className="text-sm text-black hover:text-gray-700 hover:underline"
+            >
+              Go to Analysis →
+            </Link>
+          )}
         </div>
 
         <div className="flex flex-col gap-6 px-6">

@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 
@@ -16,6 +17,10 @@ from app.utils.storage import (
 log = logging.getLogger(__name__)
 
 
+def supabase_configured() -> bool:
+    return bool(os.environ.get("SUPABASE_URL")) and bool(os.environ.get("SUPABASE_KEY"))
+
+
 async def generate_and_save_project_icon(
     authorization: str,
     project_id: str,
@@ -23,6 +28,10 @@ async def generate_and_save_project_icon(
     """
     Background task to generate and save a 3D icon for the project if it doesn't have one.
     """
+    if not supabase_configured():
+        log.info("Supabase not configured; skipping project icon generation")
+        return
+
     try:
         log.info(f"Starting background task to generate icon for project {project_id}")
 
@@ -94,6 +103,10 @@ async def save_images_to_database(
     """
     Background task to upload images to storage and save the pair to database.
     """
+    if not supabase_configured():
+        log.info("Supabase not configured; skipping image pair save")
+        return
+
     try:
         log.info(f"Starting background task to save images for project {project_id}")
 
@@ -178,22 +191,22 @@ class ImageController:
                 )
                 log.info("Image generation completed successfully")
 
-                # Add background task to generate and save project icon (on first generation)
-                background_tasks.add_task(
-                    generate_and_save_project_icon,
-                    authorization=authorization,
-                    project_id=input.project_id,
-                )
-
-                # Add background task to save images to database
-                background_tasks.add_task(
-                    save_images_to_database,
-                    authorization=authorization,
-                    project_id=input.project_id,
-                    input_image_data=input.image_data,
-                    output_image_data=response.image_data,
-                    prompt_text=input.prompt,
-                )
+                if supabase_configured():
+                    background_tasks.add_task(
+                        generate_and_save_project_icon,
+                        authorization=authorization,
+                        project_id=input.project_id,
+                    )
+                    background_tasks.add_task(
+                        save_images_to_database,
+                        authorization=authorization,
+                        project_id=input.project_id,
+                        input_image_data=input.image_data,
+                        output_image_data=response.image_data,
+                        prompt_text=input.prompt,
+                    )
+                else:
+                    log.info("Supabase not configured; skipping persistence tasks")
 
                 return response
             except ValueError as e:

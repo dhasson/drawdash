@@ -6,12 +6,13 @@ import { usePathname } from 'next/navigation';
 
 import React, { useState } from 'react';
 
-import { FolderOpen, Menu, Plus, Settings, Sidebar, X } from 'lucide-react';
+import { FolderOpen, Menu, Paintbrush, Plus, Settings, Sidebar, X } from 'lucide-react';
 
 import { CreateProjectDialog } from '@/components/projects/create-project-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 enum SidebarTab {
+  DEMO = 'Demo',
   PROJECTS = 'Projects',
   SETTINGS = 'Settings',
 }
@@ -23,6 +24,11 @@ interface SidebarTabInfo {
 }
 
 const sidebarTabs: SidebarTabInfo[] = [
+  {
+    value: SidebarTab.DEMO,
+    icon: <Paintbrush size={16} />,
+    path: '/demo',
+  },
   {
     value: SidebarTab.PROJECTS,
     icon: <FolderOpen size={16} />,

@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.controllers.image import ImageController
 from app.controllers.image_pair import ImagePairController
 from app.controllers.project import ProjectController
+from app.controllers.transcribe import router as transcribe_router
 from app.services.image import ImageService
 from app.services.image_pair import ImagePairService
 from app.services.project import ProjectService
@@ -64,4 +65,13 @@ router.include_router(
     get_image_controller_router(),
     tags=["image"],
     prefix="/api/generate-image",
+)
+
+
+### Transcription (local faster-whisper)
+
+router.include_router(
+    transcribe_router,
+    tags=["transcribe"],
+    prefix="/api/transcribe",
 )

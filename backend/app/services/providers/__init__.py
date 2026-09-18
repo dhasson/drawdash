@@ -1,0 +1,58 @@
+"""Image generation providers selected via IMAGE_PROVIDER."""
+
+from __future__ import annotations
+
+import logging
+import os
+
+from app.models.image import ImageGenerationRequest, ImageGenerationResponse
+from app.services.providers.gemini_image import GeminiImageProvider
+from app.services.providers.local_diagram import LocalDiagramProvider
+from app.services.providers.pollinations import PollinationsProvider
+from app.services.providers.svg_llm import SvgLlmProvider
+
+log = logging.getLogger(__name__)
+
+PROVIDERS = {
+    "local-diagram": LocalDiagramProvider,
+    "svg-llm": SvgLlmProvider,
+    "pollinations": PollinationsProvider,
+    "gemini-image": GeminiImageProvider,
+}
+
+
+def resolve_provider_name() -> str:
+    name = os.environ.get("IMAGE_PROVIDER", "local-diagram").strip().lower() or "local-diagram"
+    has_google = bool(os.environ.get("GOOGLE_API_KEY", "").strip())
+
+    # svg-llm needs a Google key — fall back so the Tab demo still works
+    if name == "svg-llm" and not has_google:
+        log.warning(
+            "IMAGE_PROVIDER=svg-llm but GOOGLE_API_KEY is empty; using local-diagram"
+        )
+        return "local-diagram"
+
+    if name == "gemini-image" and not has_google:
+        log.warning(
+            "IMAGE_PROVIDER=gemini-image but GOOGLE_API_KEY is empty; using local-diagram"
+        )
+        return "local-diagram"
+
+    return name
+
+
+def get_image_provider():
+    name = resolve_provider_name()
+    if name not in PROVIDERS:
+        raise ValueError(
+            f"Unknown IMAGE_PROVIDER '{name}'. "
+            f"Choose one of: {', '.join(sorted(PROVIDERS))}"
+        )
+    return PROVIDERS[name]()
+
+
+async def generate_with_provider(
+    request: ImageGenerationRequest,
+) -> ImageGenerationResponse:
+    provider = get_image_provider()
+    return await provider.generate(request)

@@ -8,12 +8,12 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/projects');
+    router.push('/demo');
   }, [router]);
 
   return (
-    <div className="flex h-screen items-center justify-center">
-      <p className="text-gray-600">Redirecting to projects...</p>
+    <div className="flex h-full items-center justify-center text-sm text-gray-500">
+      Redirecting to free demo...
     </div>
   );
 }

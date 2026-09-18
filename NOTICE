@@ -1,0 +1,17 @@
+DrawDash Free-Stack Fork
+========================
+
+This project is a fork of https://github.com/SuveenE/drawdash
+(MIT License, Copyright (c) 2025 Suveen Ellawela).
+
+Upstream paper: Proactive Agentic Whiteboards: Enhancing Diagrammatic Learning
+https://arxiv.org/abs/2512.01234
+
+Modifications in this fork:
+- Default IMAGE_PROVIDER=local-diagram (Pillow boxes, no API key)
+- Optional svg-llm, pollinations, and paid gemini-image providers
+- Local /demo mode without Supabase
+- Soft-disable of Supabase background saves when env vars are unset
+- Local faster-whisper for Agent Mode speech
+
+The original MIT license text is preserved in LICENSE.
