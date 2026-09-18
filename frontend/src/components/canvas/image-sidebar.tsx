@@ -120,7 +120,7 @@ export function ImageSidebar({
         <div className="flex items-center justify-end border-b border-gray-200 bg-white p-3">
           {localMode ? (
             <span className="text-sm text-gray-500">
-              Free demo · Tab accept · mic → local Whisper
+              Workshop board · Tab accept · export leave-behind next
             </span>
           ) : (
             <Link
@@ -188,7 +188,8 @@ export function ImageSidebar({
               {/* Agent Mode Description */}
               <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
                 <p className="text-sm text-blue-900">
-                  Agent mode listens to your explanations and proactively suggests diagram changes.
+                  Agent mode listens while you facilitate. It suggests board updates you can accept
+                  with Tab in front of the room.
                 </p>
               </div>
 
@@ -262,18 +263,19 @@ export function ImageSidebar({
               {/* Ask Mode Description */}
               <div className="rounded-md border border-purple-200 bg-purple-50 p-3">
                 <p className="text-sm text-purple-900">
-                  Ask mode lets you type a prompt, then generate/edit the diagram manually.
+                  Ask mode is for typed workshop prompts. Generate or edit the board, then Tab to
+                  place the leave-behind-ready suggestion.
                 </p>
               </div>
 
               {/* Text Input */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-900">
-                  What do you want to change?
+                  What should change on the board?
                 </label>
                 <Input
                   type="text"
-                  placeholder="Type your prompt here..."
+                  placeholder="e.g. Add a swimlane for Ops and link it to Support..."
                   value={transcript}
                   onChange={(e) => onTranscriptChange(e.target.value)}
                   className="w-full border-0 bg-white text-black shadow-none focus-visible:ring-0"
