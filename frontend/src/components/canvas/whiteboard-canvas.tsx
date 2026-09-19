@@ -2,13 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { mockSuggestBoard } from '@/actions/board-suggestion';
 import { fetchCredits, generateImage } from '@/actions/image';
 import { DEFAULT_USER_ID, updateProject } from '@/actions/projects';
 import { transcribeAudio } from '@/actions/transcribe';
 import { useProject } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
-import { Tldraw, createShapeId, getSnapshot, loadSnapshot } from 'tldraw';
+import { Tldraw, createShapeId, getSnapshot, loadSnapshot, toRichText } from 'tldraw';
 
+import {
+  PENDING_META_KEY,
+  partitionPending,
+  suggestionToPartials,
+  type BoardSuggestion,
+} from '@/lib/board-suggestion';
 import {
   assertExportablePngBase64,
   downloadPngFromBase64,
@@ -44,9 +51,10 @@ export function WhiteboardCanvas({
   );
 
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [pendingSuggestionId, setPendingSuggestionId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [mode, setMode] = useState<'agent' | 'ask'>('agent'); // Explicit mode tracking
+  const [mode, setMode] = useState<'agent' | 'ask'>('ask');
   const [agentTranscript, setAgentTranscript] = useState(''); // Voice transcript for Agent Mode
   const [askPrompt, setAskPrompt] = useState(''); // Text input for Ask Mode
   const [error, setError] = useState<string | null>(null);
@@ -562,6 +570,129 @@ export function WhiteboardCanvas({
     console.log('Image rejected');
   }, []);
 
+  const listFrameShapes = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor || !frameId) return [];
+    return editor
+      .getSortedChildIdsForParent(frameId)
+      .map((id: string) => editor.getShape(id))
+      .filter(Boolean)
+      .map((shape: { id: string; meta?: Record<string, unknown> }) => ({
+        id: shape.id,
+        meta: shape.meta ?? {},
+      }));
+  }, [frameId]);
+
+  const rejectPendingSuggestion = useCallback(
+    (suggestionId: string) => {
+      const editor = editorRef.current;
+      if (!editor || !frameId) return;
+      const { pendingIds } = partitionPending(listFrameShapes(), suggestionId);
+      if (pendingIds.length > 0) {
+        editor.deleteShapes(pendingIds);
+      }
+      setPendingSuggestionId(null);
+      setImageUsed(true);
+    },
+    [frameId, listFrameShapes],
+  );
+
+  const commitPendingSuggestion = useCallback(
+    (suggestionId: string) => {
+      const editor = editorRef.current;
+      if (!editor || !frameId) return;
+      const { pendingIds } = partitionPending(listFrameShapes(), suggestionId);
+      if (pendingIds.length === 0) {
+        setPendingSuggestionId(null);
+        setImageUsed(true);
+        return;
+      }
+      editor.updateShapes(
+        pendingIds.map((id: string) => {
+          const shape = editor.getShape(id);
+          const meta = { ...(shape?.meta ?? {}) };
+          delete meta[PENDING_META_KEY];
+          const patch: {
+            id: string;
+            type: string;
+            meta: Record<string, unknown>;
+            props?: { dash: string; color: string };
+          } = {
+            id,
+            type: shape?.type ?? 'geo',
+            meta,
+          };
+          if (shape?.type === 'geo') {
+            patch.props = { dash: 'draw', color: 'blue' };
+          }
+          return patch;
+        }),
+      );
+      setPendingSuggestionId(null);
+      setImageUsed(true);
+    },
+    [frameId, listFrameShapes],
+  );
+
+  const applyBoardSuggestion = useCallback(
+    (suggestion: BoardSuggestion) => {
+      const editor = editorRef.current;
+      if (!editor || !frameId) {
+        throw new Error('Canvas not ready');
+      }
+      if (pendingSuggestionId) {
+        rejectPendingSuggestion(pendingSuggestionId);
+      }
+      const plan = suggestionToPartials(suggestion, frameId as ReturnType<typeof createShapeId>);
+      const creates = plan.creates.map((partial) => {
+        if (partial.type !== 'geo' || !partial.props) return partial;
+        return {
+          ...partial,
+          props: {
+            ...partial.props,
+            dash: 'dashed',
+            color: 'orange',
+          },
+        };
+      });
+      if (creates.length > 0) {
+        editor.createShapes(creates);
+      }
+      for (const update of plan.labelUpdates) {
+        editor.updateShapes([
+          {
+            id: update.shapeId,
+            type: 'geo',
+            props: { richText: toRichText(update.label) },
+          },
+        ]);
+      }
+      if (plan.deletes.length > 0) {
+        editor.deleteShapes(plan.deletes);
+      }
+      setPendingSuggestionId(suggestion.id);
+      setGeneratedImage(null);
+      setImageUsed(false);
+    },
+    [frameId, pendingSuggestionId, rejectPendingSuggestion],
+  );
+
+  const handleAcceptSuggestion = useCallback(async () => {
+    if (pendingSuggestionId) {
+      commitPendingSuggestion(pendingSuggestionId);
+      return;
+    }
+    await handleAcceptImage();
+  }, [pendingSuggestionId, commitPendingSuggestion, handleAcceptImage]);
+
+  const handleRejectSuggestion = useCallback(() => {
+    if (pendingSuggestionId) {
+      rejectPendingSuggestion(pendingSuggestionId);
+      return;
+    }
+    handleRejectImage();
+  }, [pendingSuggestionId, rejectPendingSuggestion, handleRejectImage]);
+
   // Keyboard shortcuts for Accept/Reject
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -572,21 +703,28 @@ export function WhiteboardCanvas({
         return;
       }
 
-      // Only trigger if buttons are visible
-      if (imageUsed || !generatedImage) return;
+      // Only trigger if a pending shape suggestion or image preview is waiting
+      if (imageUsed || (!generatedImage && !pendingSuggestionId)) return;
 
       if (e.key === 'Tab') {
         e.preventDefault();
-        handleAcceptImage();
+        handleAcceptSuggestion();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        handleRejectImage();
+        handleRejectSuggestion();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [imageUsed, generatedImage, showSlider, handleAcceptImage, handleRejectImage]);
+  }, [
+    imageUsed,
+    generatedImage,
+    pendingSuggestionId,
+    showSlider,
+    handleAcceptSuggestion,
+    handleRejectSuggestion,
+  ]);
 
   const exportCanvasImage = useCallback(async (): Promise<string | null> => {
     console.log('exportCanvasImage: Starting export...');
@@ -670,7 +808,13 @@ export function WhiteboardCanvas({
     setError(null);
 
     try {
-      // Always export canvas image - needed for both generate and edit modes
+      if (mode === 'ask') {
+        const suggestion = await mockSuggestBoard(prompt);
+        applyBoardSuggestion(suggestion);
+        return;
+      }
+
+      // Agent mode keeps the image generate path for now
       console.log('Exporting canvas image...');
       const canvasImageData = await exportCanvasImage();
       console.log(
@@ -678,7 +822,6 @@ export function WhiteboardCanvas({
         canvasImageData ? `${canvasImageData.length} chars` : 'null',
       );
 
-      // Check if canvas has content to determine request type
       const editor = editorRef.current;
       const hasContent = frameId && editor?.getSortedChildIdsForParent(frameId).length > 0;
       const requestType = hasContent ? 'edit' : 'generate';
@@ -692,7 +835,8 @@ export function WhiteboardCanvas({
       });
 
       setGeneratedImage(data.image_data);
-      setImageUsed(false); // Reset when new image is generated
+      setPendingSuggestionId(null);
+      setImageUsed(false);
       if (typeof data.credits_remaining === 'number') {
         setCreditsEnabled(true);
         setCreditsRemaining(data.credits_remaining);
@@ -707,7 +851,15 @@ export function WhiteboardCanvas({
     } finally {
       setIsGenerating(false);
     }
-  }, [mode, agentTranscript, askPrompt, exportCanvasImage, projectId, frameId]);
+  }, [
+    mode,
+    agentTranscript,
+    askPrompt,
+    exportCanvasImage,
+    projectId,
+    frameId,
+    applyBoardSuggestion,
+  ]);
 
   const applyWorkshopTemplate = useCallback(
     (templateId: WorkshopTemplateId) => {
@@ -1041,6 +1193,7 @@ export function WhiteboardCanvas({
         projectId={projectId}
         localMode={localMode}
         generatedImage={generatedImage}
+        pendingSuggestionId={pendingSuggestionId}
         imageUsed={imageUsed}
         transcript={mode === 'agent' ? agentTranscript : askPrompt}
         isListening={isListening}
@@ -1066,8 +1219,8 @@ export function WhiteboardCanvas({
         }}
         onToggleListening={toggleListening}
         onGenerate={handleGenerate}
-        onAcceptImage={handleAcceptImage}
-        onRejectImage={handleRejectImage}
+        onAcceptImage={handleAcceptSuggestion}
+        onRejectImage={handleRejectSuggestion}
         onApplyTemplate={localMode ? applyWorkshopTemplate : undefined}
         onExportPng={localMode ? handleExportPng : undefined}
         onExportPdf={localMode ? handleExportPdf : undefined}

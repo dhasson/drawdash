@@ -19,6 +19,7 @@ interface ImageSidebarProps {
   projectId: string;
   localMode?: boolean;
   generatedImage: string | null;
+  pendingSuggestionId?: string | null;
   imageUsed: boolean;
   transcript: string;
   isListening: boolean;
@@ -43,6 +44,7 @@ export function ImageSidebar({
   projectId,
   localMode = false,
   generatedImage,
+  pendingSuggestionId = null,
   imageUsed,
   transcript,
   isListening,
@@ -63,6 +65,8 @@ export function ImageSidebar({
   canvasReady,
 }: ImageSidebarProps) {
   const [isThinking, setIsThinking] = useState(false);
+  const hasPendingShapes = Boolean(pendingSuggestionId);
+  const canAcceptOrReject = !imageUsed && (Boolean(generatedImage) || hasPendingShapes);
 
   // Handle thinking -> sketching transition
   useEffect(() => {
@@ -134,7 +138,7 @@ export function ImageSidebar({
         <div className="flex items-center justify-end border-b border-gray-200 bg-white p-3">
           {localMode ? (
             <span className="text-sm text-gray-500">
-              Workshop board · Tab accept · export leave-behind next
+              Workshop board · pending shapes · Tab keep · Esc drop
               {creditsEnabled && creditsRemaining != null
                 ? ` · ${creditsRemaining} AI credits`
                 : ''}
@@ -150,10 +154,14 @@ export function ImageSidebar({
         </div>
 
         <div className="flex flex-col gap-6 px-6">
-          {/* Generated Image Display */}
+          {/* Suggestion status / image preview */}
           <div className="flex flex-col gap-2">
             <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-gray-300 bg-gray-50">
-              {generatedImage ? (
+              {hasPendingShapes ? (
+                <span className="px-4 text-center text-sm text-gray-700">
+                  Pending shapes are on the board (orange dashed). Tab keeps them. Esc drops them.
+                </span>
+              ) : generatedImage ? (
                 <Image
                   src={`data:image/png;base64,${generatedImage}`}
                   alt="Generated"
@@ -161,11 +169,10 @@ export function ImageSidebar({
                   className="object-contain"
                 />
               ) : (
-                // <Image src="/test.png" alt="Test preview" fill className="object-contain" />
-                <span className="text-sm text-gray-500">No Diagram generated yet</span>
+                <span className="text-sm text-gray-500">No suggestion yet</span>
               )}
             </div>
-            {!imageUsed && generatedImage && (
+            {canAcceptOrReject && (
               <div className="flex gap-4">
                 <Button
                   onClick={onAcceptImage}
@@ -324,8 +331,8 @@ export function ImageSidebar({
               {/* Ask Mode Description */}
               <div className="rounded-md border border-purple-200 bg-purple-50 p-3">
                 <p className="text-sm text-purple-900">
-                  Ask mode is for typed workshop prompts. Generate or edit the board, then Tab to
-                  place the leave-behind-ready suggestion.
+                  Ask mode proposes editable shapes on the board. Review the orange dashed pending
+                  shapes, then Tab to keep or Esc to drop. Export PNG or PDF for the leave-behind.
                 </p>
               </div>
 
