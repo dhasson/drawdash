@@ -23,3 +23,13 @@ class ImageGenerationResponse(BaseModel):
     text_response: Optional[str] = Field(
         default=None, description="Any text response from the model."
     )
+    credits_remaining: Optional[int] = Field(
+        default=None,
+        description="Remaining AI edit credits when metering is enabled. -1 means metering off.",
+    )
+
+
+class CreditsBalanceResponse(BaseModel):
+    enabled: bool
+    credits_remaining: int
+    account_id: str

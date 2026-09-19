@@ -3,10 +3,16 @@ import os
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 
-from app.models.image import ImageGenerationRequest, ImageGenerationResponse
+from app.models.image import (
+    CreditsBalanceResponse,
+    ImageGenerationRequest,
+    ImageGenerationResponse,
+)
 from app.models.project import IconGenerationRequest, ProjectUpdateRequest
+from app.services.credits import InsufficientCreditsError, get_credit_ledger
 from app.services.image import ImageService
 from app.services.project import ProjectService
+from app.services.providers.gemini_image import GeminiQuotaError
 from app.utils.database import db_client
 from app.utils.storage import (
     download_and_upload_image_from_url,
@@ -170,6 +176,19 @@ class ImageController:
     def setup_routes(self):
         router = self.router
 
+        @router.get(
+            "/credits",
+            response_model=CreditsBalanceResponse,
+        )
+        async def get_credits(project_id: str = "local-demo") -> CreditsBalanceResponse:
+            ledger = get_credit_ledger()
+            remaining = ledger.balance(project_id)
+            return CreditsBalanceResponse(
+                enabled=ledger.enabled(),
+                credits_remaining=remaining,
+                account_id=project_id,
+            )
+
         @router.post(
             "",
             response_model=ImageGenerationResponse,
@@ -209,9 +228,15 @@ class ImageController:
                     log.info("Supabase not configured; skipping persistence tasks")
 
                 return response
+            except InsufficientCreditsError as e:
+                log.warning(f"Credits exhausted: {e}")
+                raise HTTPException(status_code=402, detail=str(e))
             except ValueError as e:
                 log.error(f"Validation error: {e}")
                 raise HTTPException(status_code=400, detail=str(e))
+            except GeminiQuotaError as e:
+                log.error(f"Gemini quota error: {e}")
+                raise HTTPException(status_code=429, detail=str(e))
             except RuntimeError as e:
                 log.error(f"Service error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))

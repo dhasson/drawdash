@@ -34,6 +34,8 @@ interface ImageSidebarProps {
   onApplyTemplate?: (templateId: WorkshopTemplateId) => void;
   onExportPng?: () => void;
   onExportPdf?: () => void;
+  creditsEnabled?: boolean;
+  creditsRemaining?: number | null;
   canvasReady: boolean;
 }
 
@@ -56,6 +58,8 @@ export function ImageSidebar({
   onApplyTemplate,
   onExportPng,
   onExportPdf,
+  creditsEnabled = false,
+  creditsRemaining = null,
   canvasReady,
 }: ImageSidebarProps) {
   const [isThinking, setIsThinking] = useState(false);
@@ -131,6 +135,9 @@ export function ImageSidebar({
           {localMode ? (
             <span className="text-sm text-gray-500">
               Workshop board · Tab accept · export leave-behind next
+              {creditsEnabled && creditsRemaining != null
+                ? ` · ${creditsRemaining} AI credits`
+                : ''}
             </span>
           ) : (
             <Link
