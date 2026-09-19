@@ -133,3 +133,51 @@ export function journeyStageSuggestion(suggestionId = 'sug-journey-1'): BoardSug
     })),
   };
 }
+
+/** Horizontal swimlanes under an existing journey frame. */
+export function swimlaneSuggestion(
+  labels: string[],
+  suggestionId = 'sug-lanes-1',
+): BoardSuggestion {
+  const pad = 24;
+  const laneH = 36;
+  const laneW = 560;
+  const startY = 280;
+  return {
+    id: suggestionId,
+    ops: labels.map((label, i) => ({
+      kind: 'add_geo' as const,
+      x: pad,
+      y: startY + i * (laneH + 8),
+      w: laneW,
+      h: laneH,
+      label: `${label} swimlane`,
+      color: 'blue' as const,
+    })),
+  };
+}
+
+/** Pick a mock suggestion from the Ask prompt text. */
+export function mockSuggestionFromPrompt(prompt: string): BoardSuggestion {
+  const id = `sug-${Date.now()}`;
+  const lower = prompt.toLowerCase();
+  if (
+    /lane|passenger|aircraft|suitcase|baggage|swim/.test(lower)
+  ) {
+    return swimlaneSuggestion(['Passenger', 'Aircraft', 'Suitcase'], id);
+  }
+  return {
+    id,
+    ops: [
+      {
+        kind: 'add_note',
+        x: 40,
+        y: 260,
+        w: 160,
+        h: 72,
+        label: prompt.trim().slice(0, 80) || 'Note',
+        color: 'yellow',
+      },
+    ],
+  };
+}
