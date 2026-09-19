@@ -8,7 +8,7 @@ Primary ICP is facilitators and consultants (agencies as 2b). `/demo` is a works
 
 1. Backend on `8080` with `backend/.env`
 2. Frontend on `3000` → `http://localhost:3000/demo`
-3. Ask Mode Generate calls `POST /api/suggest-board` (`BOARD_SUGGEST_PROVIDER=mock` by default). Agent Mode may still call `IMAGE_PROVIDER` (prefer `deapi-edit` with `DEAPI_API_KEY`)
+3. Ask Mode Generate calls `POST /api/suggest-board`. Prefer `BOARD_SUGGEST_PROVIDER=shape_llm` with `GOOGLE_API_KEY` (Gemini → ShapeOp JSON). `mock` is a keyword stub for offline tests. Agent Mode may still call `IMAGE_PROVIDER` (prefer `deapi-edit` with `DEAPI_API_KEY`)
 4. Optional `CREDITS_ENABLED=true` meters AI edits and board suggestions per `project_id`
 
 ## Image providers
