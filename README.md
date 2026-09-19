@@ -5,12 +5,12 @@
 <h1 align="center">DrawDash (free-stack fork)</h1>
 
 <p align="center">
-  <b>Proactive Agentic Whiteboards — local free demo</b>
+  <b>Workshop board for facilitators — local free-stack fork</b>
 </p>
 
 <p align="center">
   Fork of <a href="https://github.com/SuveenE/drawdash">SuveenE/drawdash</a> (MIT).
-  Listens while you explain, suggests a diagram, accept with <b>Tab</b>.
+  Facilitate on a canvas, get AI suggestions, accept with <b>Tab</b>.
 </p>
 
 <p align="center">
@@ -76,9 +76,11 @@ npm run dev
 
 Open **http://localhost:3000/demo** (Chrome/Edge recommended for mic).
 
-1. Sketch inside the Drawing Area frame  
+1. Sketch inside the Drawing Area frame (workshop board)  
 2. Agent Mode → start mic → speak → **stop mic** (or wait ~25s) → local Whisper transcribes  
 3. **Tab** accept · **Esc** reject  
+
+Built for facilitators and consultants first. Teachers and architecture sync are out of scope for this wedge.
 
 ## Setup (components)
 
