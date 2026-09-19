@@ -30,6 +30,7 @@ interface ImageSidebarProps {
   onTranscriptChange: (value: string) => void;
   onToggleListening: () => void;
   onGenerate: () => void;
+  onRenderLeavebehind?: () => void;
   onAcceptImage: () => void;
   onRejectImage: () => void;
   onApplyTemplate?: (templateId: WorkshopTemplateId) => void;
@@ -55,6 +56,7 @@ export function ImageSidebar({
   onTranscriptChange,
   onToggleListening,
   onGenerate,
+  onRenderLeavebehind,
   onAcceptImage,
   onRejectImage,
   onApplyTemplate,
@@ -67,6 +69,8 @@ export function ImageSidebar({
   const [isThinking, setIsThinking] = useState(false);
   const hasPendingShapes = Boolean(pendingSuggestionId);
   const canAcceptOrReject = !imageUsed && (Boolean(generatedImage) || hasPendingShapes);
+  const canRenderLeavebehind =
+    Boolean(onRenderLeavebehind) && !hasPendingShapes && canvasReady && !isGenerating;
 
   // Handle thinking -> sketching transition
   useEffect(() => {
@@ -138,7 +142,7 @@ export function ImageSidebar({
         <div className="flex items-center justify-end border-b border-gray-200 bg-white p-3">
           {localMode ? (
             <span className="text-sm text-gray-500">
-              Workshop board · pending shapes · Tab keep · Esc drop
+              Workshop board · shapes then render · Tab accept
               {creditsEnabled && creditsRemaining != null
                 ? ` · ${creditsRemaining} AI credits`
                 : ''}
@@ -159,7 +163,7 @@ export function ImageSidebar({
             <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-gray-300 bg-gray-50">
               {hasPendingShapes ? (
                 <span className="px-4 text-center text-sm text-gray-700">
-                  Pending shapes are on the board (orange dashed). Tab keeps them. Esc drops them.
+                  Step 1. Pending shapes on the board. Tab keeps them. Esc drops them.
                 </span>
               ) : generatedImage ? (
                 <Image
@@ -169,7 +173,10 @@ export function ImageSidebar({
                   className="object-contain"
                 />
               ) : (
-                <span className="text-sm text-gray-500">No suggestion yet</span>
+                <span className="px-4 text-center text-sm text-gray-500">
+                  Step 2. After Tab, use Render leave-behind for the AI image. Or Export PNG for a
+                  quick snapshot.
+                </span>
               )}
             </div>
             {canAcceptOrReject && (
@@ -191,6 +198,16 @@ export function ImageSidebar({
                   Reject (Esc)
                 </Button>
               </div>
+            )}
+            {onRenderLeavebehind && (
+              <Button
+                type="button"
+                className="w-full"
+                disabled={!canRenderLeavebehind}
+                onClick={onRenderLeavebehind}
+              >
+                {isGenerating && !hasPendingShapes ? 'Rendering leave-behind…' : 'Render leave-behind'}
+              </Button>
             )}
           </div>
 
@@ -331,8 +348,8 @@ export function ImageSidebar({
               {/* Ask Mode Description */}
               <div className="rounded-md border border-purple-200 bg-purple-50 p-3">
                 <p className="text-sm text-purple-900">
-                  Ask mode proposes editable shapes on the board. Review the orange dashed pending
-                  shapes, then Tab to keep or Esc to drop. Export PNG or PDF for the leave-behind.
+                  Step 1. Generate proposes editable shapes. Tab to keep. Step 2. Render leave-behind
+                  paints an AI image from the approved board (~2–3 min). Tab again to place that PNG.
                 </p>
               </div>
 

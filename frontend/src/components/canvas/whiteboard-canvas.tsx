@@ -865,6 +865,53 @@ export function WhiteboardCanvas({
     applyBoardSuggestion,
   ]);
 
+  /** Step 2 after Tab-approved shapes: deAPI polish → image preview → Tab places PNG. */
+  const handleRenderLeavebehind = useCallback(async () => {
+    if (pendingSuggestionId) {
+      setError('Accept or reject pending shapes before rendering the leave-behind image');
+      return;
+    }
+    const editor = editorRef.current;
+    if (!editor || !frameId) {
+      setError('Canvas not ready');
+      return;
+    }
+    const childCount = editor.getSortedChildIdsForParent(frameId).length;
+    if (childCount === 0) {
+      setError('Add or accept a diagram on the board first');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const canvasImageData = await exportCanvasImage();
+      if (!canvasImageData) {
+        throw new Error('Could not capture the board for leave-behind render');
+      }
+      const data = await generateImage({
+        prompt:
+          'Polish this workshop whiteboard into a clean leave-behind diagram. '
+          + 'Preserve every label and the swimlane or step layout. '
+          + 'Clean lines, high contrast, presentation-ready. Do not add new stages.',
+        image_data: canvasImageData,
+        project_id: projectId,
+        type: 'edit',
+      });
+      setGeneratedImage(data.image_data);
+      setImageUsed(false);
+      if (typeof data.credits_remaining === 'number') {
+        setCreditsEnabled(true);
+        setCreditsRemaining(data.credits_remaining);
+      }
+    } catch (err) {
+      console.error('Error rendering leave-behind:', err);
+      setError(err instanceof Error ? err.message : 'Failed to render leave-behind');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [pendingSuggestionId, frameId, exportCanvasImage, projectId]);
+
   const applyWorkshopTemplate = useCallback(
     (templateId: WorkshopTemplateId) => {
       const editor = editorRef.current;
@@ -1223,6 +1270,7 @@ export function WhiteboardCanvas({
         }}
         onToggleListening={toggleListening}
         onGenerate={handleGenerate}
+        onRenderLeavebehind={localMode ? handleRenderLeavebehind : undefined}
         onAcceptImage={handleAcceptSuggestion}
         onRejectImage={handleRejectSuggestion}
         onApplyTemplate={localMode ? applyWorkshopTemplate : undefined}

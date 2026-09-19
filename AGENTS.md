@@ -2,7 +2,7 @@
 
 ## Product thesis (locked)
 
-Primary ICP is facilitators and consultants (agencies as 2b). `/demo` is a workshop board with shape-first Ask Mode (pending shapes, Tab keep, Esc drop) and Export PNG/PDF leave-behind. Not K-12 teaching. Not architecture repo-sync until a later wedge.
+Primary ICP is facilitators and consultants (agencies as 2b). `/demo` is a workshop board with a two-step Ask loop: (1) shape suggestions with Tab keep / Esc drop, (2) Render leave-behind via canvas-aware image edit, then Tab to place the PNG. Export PNG/PDF remains a fast snapshot. Not K-12 teaching. Not architecture repo-sync until a later wedge.
 
 ## Local loop
 
