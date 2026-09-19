@@ -14,6 +14,7 @@ from app.models.board_suggestion import (
     BoardSuggestion,
     BoardSuggestRequest,
 )
+from app.services.shape_llm_suggest import ShapeLlmBoardSuggestProvider
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +71,8 @@ def get_board_suggest_provider() -> BoardSuggestProvider:
     key = (os.environ.get("BOARD_SUGGEST_PROVIDER") or "mock").strip().lower() or "mock"
     if key == "mock":
         return MockBoardSuggestProvider()
-    # Future: shape_llm. Unknown keys fail loud rather than silent image fallback.
+    if key in {"shape_llm", "shape-llm", "gemini"}:
+        return ShapeLlmBoardSuggestProvider()
     raise ValueError(
-        f"Unknown BOARD_SUGGEST_PROVIDER={key!r}. Use mock until shape_llm ships."
+        f"Unknown BOARD_SUGGEST_PROVIDER={key!r}. Use mock or shape_llm."
     )
