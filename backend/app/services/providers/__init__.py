@@ -6,6 +6,7 @@ import logging
 import os
 
 from app.models.image import ImageGenerationRequest, ImageGenerationResponse
+from app.services.providers.deapi_edit import DeapiEditProvider
 from app.services.providers.gemini_image import GeminiImageProvider
 from app.services.providers.local_diagram import LocalDiagramProvider
 from app.services.providers.pollinations import PollinationsProvider
@@ -18,14 +19,18 @@ PROVIDERS = {
     "svg-llm": SvgLlmProvider,
     "pollinations": PollinationsProvider,
     "gemini-image": GeminiImageProvider,
+    "deapi-edit": DeapiEditProvider,
 }
 
 
 def resolve_provider_name() -> str:
-    name = os.environ.get("IMAGE_PROVIDER", "local-diagram").strip().lower() or "local-diagram"
+    name = (
+        os.environ.get("IMAGE_PROVIDER", "local-diagram").strip().lower()
+        or "local-diagram"
+    )
     has_google = bool(os.environ.get("GOOGLE_API_KEY", "").strip())
+    has_deapi = bool(os.environ.get("DEAPI_API_KEY", "").strip())
 
-    # svg-llm needs a Google key — fall back so the Tab demo still works
     if name == "svg-llm" and not has_google:
         log.warning(
             "IMAGE_PROVIDER=svg-llm but GOOGLE_API_KEY is empty; using local-diagram"
@@ -35,6 +40,12 @@ def resolve_provider_name() -> str:
     if name == "gemini-image" and not has_google:
         log.warning(
             "IMAGE_PROVIDER=gemini-image but GOOGLE_API_KEY is empty; using local-diagram"
+        )
+        return "local-diagram"
+
+    if name == "deapi-edit" and not has_deapi:
+        log.warning(
+            "IMAGE_PROVIDER=deapi-edit but DEAPI_API_KEY is empty; using local-diagram"
         )
         return "local-diagram"
 

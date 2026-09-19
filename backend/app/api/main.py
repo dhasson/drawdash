@@ -1,12 +1,29 @@
 import logging
+import os
+import ssl
 from contextlib import asynccontextmanager
 
+import certifi
 from fastapi import FastAPI, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.routes import router
+
+# Windows Python often lacks system CAs; point TLS at certifi before Google/fal calls.
+os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
+os.environ.setdefault("CURL_CA_BUNDLE", certifi.where())
+
+# Local Windows POC: corporate/missing CAs break Google GenAI TLS.
+# Opt out with DRAWDASH_INSECURE_SSL=false.
+if os.environ.get("DRAWDASH_INSECURE_SSL", "true").strip().lower() not in {
+    "0",
+    "false",
+    "no",
+}:
+    ssl._create_default_https_context = ssl._create_unverified_context
 
 logging.basicConfig(
     level=logging.INFO,

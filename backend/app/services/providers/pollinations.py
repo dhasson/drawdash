@@ -21,15 +21,12 @@ class PollinationsProvider:
         self, request: ImageGenerationRequest
     ) -> ImageGenerationResponse:
         log.info("Using IMAGE_PROVIDER=pollinations")
-        prompt = (
-            "Clean educational diagram on white background, minimal line art, "
-            "labeled boxes and arrows. "
-            f"{request.prompt}"
-        )
+        prompt = f"Clear illustration. {request.prompt}"
         encoded = quote(prompt)
+        # Public prompt endpoint (no key). gen.pollinations.ai often returns 401.
         url = (
-            f"https://gen.pollinations.ai/image/{encoded}"
-            f"?model=flux&width=1024&height=768&nologo=true"
+            f"https://image.pollinations.ai/prompt/{encoded}"
+            f"?width=1024&height=768&nologo=true"
         )
 
         headers = {}
@@ -38,7 +35,12 @@ class PollinationsProvider:
             headers["Authorization"] = f"Bearer {api_key}"
 
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            # verify=False: some Windows Python installs fail system CA lookup
+            # even with certifi (same TLS class as next/font Google Fonts).
+            async with httpx.AsyncClient(
+                timeout=120.0,
+                verify=False,
+            ) as client:
                 response = await client.get(url, headers=headers, follow_redirects=True)
                 response.raise_for_status()
                 image = Image.open(BytesIO(response.content)).convert("RGB")
