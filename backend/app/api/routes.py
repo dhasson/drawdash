@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.controllers.image import ImageController
 from app.controllers.image_pair import ImagePairController
 from app.controllers.project import ProjectController
+from app.controllers.board_suggestion import router as board_suggestion_router
 from app.controllers.transcribe import router as transcribe_router
 from app.services.image import ImageService
 from app.services.image_pair import ImagePairService
@@ -74,4 +75,13 @@ router.include_router(
     transcribe_router,
     tags=["transcribe"],
     prefix="/api/transcribe",
+)
+
+
+### Board suggestions (shape-first Ask Mode)
+
+router.include_router(
+    board_suggestion_router,
+    tags=["board-suggestion"],
+    prefix="/api/suggest-board",
 )
