@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { mockSuggestBoard } from '@/actions/board-suggestion';
+import { suggestBoard } from '@/actions/board-suggestion';
 import { fetchCredits, generateImage } from '@/actions/image';
 import { DEFAULT_USER_ID, updateProject } from '@/actions/projects';
 import { transcribeAudio } from '@/actions/transcribe';
@@ -809,8 +809,12 @@ export function WhiteboardCanvas({
 
     try {
       if (mode === 'ask') {
-        const suggestion = await mockSuggestBoard(prompt);
-        applyBoardSuggestion(suggestion);
+        const result = await suggestBoard(prompt, projectId);
+        applyBoardSuggestion(result.suggestion);
+        if (typeof result.credits_remaining === 'number') {
+          setCreditsEnabled(true);
+          setCreditsRemaining(result.credits_remaining);
+        }
         return;
       }
 
